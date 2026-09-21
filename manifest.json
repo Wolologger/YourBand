@@ -1,0 +1,24 @@
+{
+  "id": "/",
+  "name": "YourBand",
+  "short_name": "YourBand",
+  "description": "Repertorio, ensayos e instrumentos de tu grupo — funciona offline y sincroniza con tu cuenta.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#f4623a",
+  "lang": "es",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "categories": ["music", "productivity"],
+  "related_applications": []
+}

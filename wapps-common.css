@@ -1,0 +1,139 @@
+/*
+ * W//APPS — Hoja de estilos compartida v1.0
+ * ─────────────────────────────────────────────────────────────────
+ * Correcciones responsive, touch targets y estados de focus
+ * que aplican a TODAS las apps. Cargar DESPUÉS del <style> inline.
+ */
+
+/* ── TOUCH TARGETS ─────────────────────────────────────────────── */
+/* Botones de la barra de sync demasiado pequeños en móvil */
+.sync-btn {
+  min-height: 36px;
+  padding: 5px 12px;
+  touch-action: manipulation;
+}
+
+/* Botones generales — área mínima táctil de 44px */
+.btn {
+  min-height: 40px;
+  touch-action: manipulation;
+}
+.btn-sm {
+  min-height: 34px;
+}
+
+/* FAB siempre con area táctil completa */
+.fab {
+  min-height: 50px;
+  touch-action: manipulation;
+}
+
+/* ── FOCUS VISIBLE ─────────────────────────────────────────────── */
+/* Todos los botones del proyecto carecen de :focus visible */
+.btn:focus-visible,
+.sync-btn:focus-visible,
+.fab:focus-visible,
+.tab:focus-visible,
+.tipo-btn:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--y, #e8f040);
+  outline-offset: 2px;
+}
+
+/* ── SCROLL HORIZONTAL — indicador de más contenido ───────────── */
+/* Gradiente fade-out derecho en barras con overflow horizontal */
+.tabs,
+.pet-bar,
+.car-bar,
+.kid-bar,
+.gtabs,
+.filter-bar,
+.cat-bar {
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
+  mask-image: linear-gradient(to right, black calc(100% - 32px), transparent 100%);
+}
+/* Quitar máscara si no hay overflow (JS lo gestiona inline si es necesario) */
+.tabs.no-overflow,
+.pet-bar.no-overflow {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* ── FIELD-ROW: evitar overflow en 320px ──────────────────────── */
+/* En pantallas muy pequeñas los campos deben apilarse */
+@media (max-width: 380px) {
+  .field-row,
+  .ef-row {
+    flex-wrap: wrap;
+  }
+  .field-row > *,
+  .ef-row > * {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+}
+
+/* ── RESUMEN/SUMMARY GRID: 2 cols en móvil pequeño ────────────── */
+@media (max-width: 380px) {
+  .summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .scard-val {
+    font-size: 20px;
+  }
+}
+
+/* ── SYNC-BAR: altura mínima en mobile ────────────────────────── */
+@media (max-width: 480px) {
+  .sync-bar {
+    min-height: 44px;
+    padding: 8px 12px;
+  }
+}
+
+/* ── BREAKPOINT INTERMEDIO 480–720px ──────────────────────────── */
+/* Gap sin cobertura en todos los archivos: entre el max-width del shell y
+   el primer media query a 720px. Aquí se añade transición fluida. */
+@media (min-width: 480px) and (max-width: 719px) {
+  .shell {
+    max-width: 100% !important;
+  }
+}
+
+/* ── RESPONSIVE GENERAL DE TEXTO ──────────────────────────────── */
+@media (max-width: 380px) {
+  /* Reducir fuentes en headers cuando no caben */
+  .wnav-title {
+    font-size: 10px;
+  }
+  /* Quick-add input en gastos-diarios */
+  .qa-amount {
+    font-size: 22px;
+  }
+}
+
+/* ── MEJORAS DE RENDIMIENTO ─────────────────────────────────────── */
+/* Reducir repaint en elementos animados */
+.sync-dot.syncing,
+.alert-dot {
+  will-change: opacity;
+}
+.fab:active {
+  will-change: transform;
+}
+
+/* ── PRINT ────────────────────────────────────────────────────── */
+@media print {
+  .sync-bar,
+  .fab-area,
+  .tabs,
+  .tipo-bar,
+  .wnav-back,
+  button {
+    display: none !important;
+  }
+  .content {
+    overflow: visible !important;
+    padding-bottom: 0 !important;
+  }
+}

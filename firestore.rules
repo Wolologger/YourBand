@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Datos del grupo: users/{uid}/data/{key} (key = "setlist.data", "instrumentos.data", ...)
+    // El dueño siempre tiene acceso total. Además, cualquier persona cuyo correo
+    // aparezca en sharedViewerEmails puede leer, y cualquiera en sharedEditorEmails
+    // puede leer y escribir. Esas listas las mantiene la propia app dentro del documento
+    // (ver recomputeSharedEmails() en el código) a partir de lo que el dueño configura
+    // en Ajustes → Compartir grupo.
+    match /users/{uid}/data/{key} {
+      allow read: if request.auth != null && (
+        request.auth.uid == uid ||
+        request.auth.token.email.lower() in resource.data.get('sharedViewerEmails', []) ||
+        request.auth.token.email.lower() in resource.data.get('sharedEditorEmails', [])
+      );
+      allow write: if request.auth != null && (
+        request.auth.uid == uid ||
+        request.auth.token.email.lower() in resource.data.get('sharedEditorEmails', [])
+      );
+    }
+
+    // Invitaciones: un documento por correo (en minúsculas), con la lista de grupos
+    // que le han compartido. Solo esa persona (autenticada con ese correo) puede leerlo.
+    // La escritura queda abierta a cualquier usuario autenticado por simplicidad: no hay
+    // backend que verifique quién invita a quién. Es un compromiso razonable para una
+    // app de grupo pequeña, pero ten en cuenta que, en teoría, alguien con una cuenta
+    // válida podría escribir una invitación falsa si conociera el UID de otra persona
+    // (no es información pública, pero tampoco es secreta).
+    match /shareInvites/{emailId} {
+      allow read: if request.auth != null && request.auth.token.email.lower() == emailId;
+      allow write: if request.auth != null;
+    }
+  }
+}

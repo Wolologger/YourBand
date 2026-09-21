@@ -1,0 +1,17 @@
+# Credenciales de Firebase (usa wapps-config.example.js como plantilla)
+wapps-config.js
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/settings.json
+*.swp
+*.swo
+*~
+
+# Firebase CLI (si despliegas con Firebase Hosting)
+.firebase/
+firebase-debug.log
