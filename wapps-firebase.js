@@ -43,11 +43,25 @@ const WFirebase = (() => {
   let _lastAuthEvent = null;
   let _ready = false;
   let _online = navigator.onLine;
+  let _initError = null;
+
+  // Si Firebase no puede inicializarse (config ausente, SDK bloqueado/sin red,
+  // excepción al inicializar…) hay que avisar igualmente a la app con
+  // wapps:auth-change (user: null): sin esto, la app se queda mostrando
+  // "VERIFICANDO SESION" para siempre, porque ese evento es lo único que
+  // saca la pantalla de login de su estado de carga (ver showLogin/showApp
+  // en index.html). getInitError() permite a la UI distinguir "no hay
+  // sesión" de "Firebase está roto" y mostrar un mensaje útil.
+  function _giveUp(reason) {
+    _initError = reason;
+    _lastAuthEvent = { user: null };
+    window.dispatchEvent(new CustomEvent('wapps:auth-change', { detail: { user: null } }));
+  }
 
   // ── Init ─────────────────────────────────────────────────────────
   function _init() {
     try {
-      if (!FIREBASE_CONFIG) return;
+      if (!FIREBASE_CONFIG) { _giveUp('config-missing'); return; }
       firebase.initializeApp(FIREBASE_CONFIG);
       _auth  = firebase.auth();
       _db    = firebase.firestore();
@@ -64,6 +78,7 @@ const WFirebase = (() => {
       });
     } catch(e) {
       console.error('[WFirebase] Error init:', e);
+      _giveUp('init-error');
     }
   }
 
@@ -74,6 +89,7 @@ const WFirebase = (() => {
       setTimeout(() => _waitForSDK(retries - 1), 200);
     } else {
       console.error('[WFirebase] Firebase SDK no disponible.');
+      _giveUp('sdk-unavailable');
     }
   }
 
@@ -157,7 +173,12 @@ const WFirebase = (() => {
       return result.user;
     } catch(e) {
       console.error('[WFirebase] login error:', e);
-      return null;
+      // Se relanza (en vez de devolver null) para que el llamador pueda
+      // distinguir motivos concretos como e.code === 'auth/popup-closed-by-user'.
+      // Antes se tragaba el error aquí: doLogin() en index.html nunca podía
+      // mostrar el mensaje de "ventana cerrada" porque solo veía un Error
+      // genérico sin .code.
+      throw e;
     }
   }
 
@@ -180,6 +201,7 @@ const WFirebase = (() => {
   function isOnline()  { return _online; }
   function isReady()   { return _ready; }
   function getLastAuth() { return _lastAuthEvent; }
+  function getInitError() { return _initError; }
 
   // ── Firestore push ────────────────────────────────────────────────
   async function pushToFirestore(uid, key, data) {
@@ -254,7 +276,7 @@ const WFirebase = (() => {
     _waitForSDK();
   }
 
-  return { login, logout, onAuthChange, getUser, getLastAuth, isOnline, setOnline, isReady, pushToFirestore, pushToFirestoreExact, pullFromFirestore, pullAll, getLatency, startPingMonitor, stopPingMonitor };
+  return { login, logout, onAuthChange, getUser, getLastAuth, getInitError, isOnline, setOnline, isReady, pushToFirestore, pushToFirestoreExact, pullFromFirestore, pullAll, getLatency, startPingMonitor, stopPingMonitor };
 })();
 
 // Auto-arrancar monitor de conectividad real (todas las apps se benefician)
@@ -262,11 +284,17 @@ const WFirebase = (() => {
 // (caso típico: app monta su listener wapps:auth-change DESPUÉS de que
 //  Firebase ya autenticó vía sesión persistente → se perdía el evento → la
 //  app se quedaba pintada como OFFLINE aunque hubiera user activo).
-if (typeof window !== 'undefined' && window.WFirebase) {
+if (typeof window !== 'undefined' && typeof WFirebase !== 'undefined') {
+  // NOTA: se comprueba `typeof WFirebase` (identificador, no propiedad de
+  // window) porque WFirebase se declara con `const` al inicio de este
+  // archivo: eso crea un binding léxico global, no una propiedad de
+  // `window`. `window.WFirebase` es siempre undefined y este bloque —
+  // que arranca el monitor de conectividad real y reemite auth-change
+  // para listeners tardíos — nunca llegaba a ejecutarse.
   function _wfb_post_init() {
-    window.WFirebase.startPingMonitor();
+    WFirebase.startPingMonitor();
     // Reemitir auth si ya había user en el momento del DOMContentLoaded
-    const last = window.WFirebase.getLastAuth ? window.WFirebase.getLastAuth() : null;
+    const last = WFirebase.getLastAuth ? WFirebase.getLastAuth() : null;
     if (last) {
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('wapps:auth-change', { detail: last }));
@@ -275,7 +303,7 @@ if (typeof window !== 'undefined' && window.WFirebase) {
     // También: si auth aún no completó al DOMContentLoaded, esperar 1s y
     // reemitir el último que llegue (cubre apps con auth lento)
     setTimeout(() => {
-      const late = window.WFirebase.getLastAuth ? window.WFirebase.getLastAuth() : null;
+      const late = WFirebase.getLastAuth ? WFirebase.getLastAuth() : null;
       if (late && late !== last) {
         window.dispatchEvent(new CustomEvent('wapps:auth-change', { detail: late }));
       }

@@ -15,3 +15,15 @@ desktop.ini
 # Firebase CLI (si despliegas con Firebase Hosting)
 .firebase/
 firebase-debug.log
+
+# Tests (Playwright) — herramienta local, no se sube al repo.
+# Ver tests/README.md para instalar y correrlos desde tu copia local.
+node_modules/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+tests/
+playwright.config.js
+package.json
+package-lock.json

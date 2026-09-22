@@ -1,4 +1,4 @@
-const CACHE = 'yourband-v1';
+const CACHE = 'yourband-v2';
 
 // Núcleo: lo imprescindible para arrancar offline (app shell + fallbacks).
 const PRECACHE_CORE = [
@@ -56,6 +56,7 @@ self.addEventListener('fetch', e => {
   // Cache-first con fallback a red — permite arrancar 100% offline tras la primera visita.
   const isCacheableCDN =
     (url.hostname === 'www.gstatic.com' && url.pathname.includes('/firebasejs/')) ||
+    (url.hostname === 'cdnjs.cloudflare.com' && url.pathname.includes('/jspdf/')) ||
     url.hostname === 'fonts.googleapis.com' ||
     url.hostname === 'fonts.gstatic.com';
 

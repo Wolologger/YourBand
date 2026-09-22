@@ -6,7 +6,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#f8fafc">
+<meta name="theme-color" content="#0a0a09">
 <title>YourBand</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
@@ -19,11 +19,10 @@
 <script src="wapps-store.js"></script>
 <script src="wapps-firebase.js"></script>
 <script src="wapps-sync-ui.js" defer></script>
-<script src="wapps-pdf.js" defer></script>
 <script src="wapps-nav.js" defer></script>
 <script src="wapps-onboarding.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Anton&family=Merriweather:wght@300;400;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-<style>:root{color-scheme:light;--bg:#f8fafc;--bg2:#ffffff;--bg3:#eef1f5;--border:rgba(33,37,41,0.09);--border2:rgba(33,37,41,0.16);--text:#212529;--muted:#6c757d;--dim:#ced4da;--y:#f4623a;--r:#dc3545;--g:#198754;--b:#0d6efd;--o:#c9720a;--fh:'Anton',sans-serif;--fm:'Nunito',sans-serif;--fs:'Merriweather',serif;}
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>:root{color-scheme:light;--bg:#f8fafc;--bg2:#ffffff;--bg3:#eef1f5;--border:rgba(33,37,41,0.09);--border2:rgba(33,37,41,0.16);--text:#212529;--muted:#6c757d;--dim:#ced4da;--y:#f4623a;--r:#dc3545;--g:#198754;--b:#0d6efd;--o:#c9720a;--fh:'Bebas Neue',sans-serif;--fm:'DM Mono',monospace;--fs:'DM Sans',sans-serif;}
 :root[data-theme="dark"]{color-scheme:dark;--bg:#0f1115;--bg2:#181b21;--bg3:#20242c;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--text:#eef0f3;--muted:#8b93a1;--dim:#3a3f4a;}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}svg{vertical-align:middle;flex-shrink:0;}html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--fs);overflow-x:hidden;}/* NAV */
 .wnav{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--border2);position:sticky;top:0;z-index:100;flex-shrink:0;}.wnav-back{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1.5px solid var(--y);background:color-mix(in srgb, var(--y) 8%, transparent);color:var(--y);text-decoration:none;transition:all 0.15s;flex-shrink:0;}.wnav-back svg path{stroke:var(--y);}.wnav-back:hover{background:color-mix(in srgb, var(--y) 18%, transparent);}.wnav-logo{font-family:var(--fh);font-size:16px;letter-spacing:2px;line-height:1;flex-shrink:0;}.wnav-logo a{color:var(--muted);text-decoration:none;}.wnav-logo a span{color:var(--y);}.wnav-sep{width:1px;height:16px;background:var(--border2);flex-shrink:0;}.wnav-title{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.wnav-act-btn{background:var(--y);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-family:var(--fh);font-size:13px;letter-spacing:0.5px;cursor:pointer;flex-shrink:0;display:none;}/* SHELL */
@@ -1100,6 +1099,7 @@ function addSong() {
       ['f-titulo','f-artista','f-tono','f-dur','f-link','f-spotify','f-moises','f-notas','f-tags','f-foto','f-audio'].forEach(id=>document.getElementById(id).value='');
       document.getElementById('f-estado').value='proceso';
       closeAdd(); save(); render();
+      showToast('Canción añadida ✓', 'var(--g)');
     });
   });
 }
@@ -1352,6 +1352,7 @@ function saveEdit(id) {
     readAudioFile(audioFile, function(audioClip) {
       if (audioClip) s.audioClip = audioClip;
       editId=null; save(); render(); updateSongFabVisibility();
+      showToast('Canción actualizada ✓', 'var(--g)');
     });
   });
 }
@@ -1359,12 +1360,14 @@ function removeSongAudio(id) {
   const s = state.songs.find(x=>x.id===id); if(!s) return;
   s.audioClip = null;
   save(); render();
+  showToast('Audio eliminado', 'var(--muted)');
 }
 function delSong(id) {
   customConfirm('¿Eliminar esta canción?', () => {
     state.songs=state.songs.filter(x=>x.id!==id);
     (state.setlists||[]).forEach(function(sl){sl.songIds=sl.songIds.filter(function(sid){return sid!==id;});});
     editId=null; save(); render(); updateSongFabVisibility();
+    showToast('Canción eliminada', 'var(--muted)');
   });
 }
 
@@ -1725,6 +1728,7 @@ function saveEnsayo() {
 
   if (!songResults.length) { showToast('Valora al menos una canción.', 'var(--r)'); return; }
 
+  const wasEditingEnsayo = !!editingEnsayoId;
   if (editingEnsayoId) {
     const e = state.ensayos.find(x=>x.id===editingEnsayoId);
     if (e) Object.assign(e, { fecha, duracion, titulo, songs: songResults });
@@ -1736,6 +1740,7 @@ function saveEnsayo() {
   save();
   clearEnsayoForm();
   renderEnsayos();
+  showToast(wasEditingEnsayo ? 'Ensayo actualizado ✓' : 'Ensayo guardado ✓', 'var(--g)');
 }
 
 function renderEnsayos() {
@@ -1817,6 +1822,7 @@ function delEnsayo(id) {
   customConfirm('¿Eliminar este ensayo?', () => {
     state.ensayos = (state.ensayos||[]).filter(e=>e.id!==id);
     save(); renderEnsayos();
+    showToast('Ensayo eliminado', 'var(--muted)');
   });
 }
 
@@ -1933,6 +1939,7 @@ function saveEstudio() {
 
   if (!songResults.length && !duracion) { showToast('Marca al menos una canción practicada, o registra la duración.', 'var(--r)'); return; }
 
+  const wasEditingEstudio = !!editingEstudioId;
   if (editingEstudioId) {
     const e = state.estudios.find(x=>x.id===editingEstudioId);
     if (e) Object.assign(e, { fecha, duracion, titulo, songs: songResults });
@@ -1944,6 +1951,7 @@ function saveEstudio() {
   save();
   clearEstudioForm();
   renderEstudio();
+  showToast(wasEditingEstudio ? 'Sesión actualizada ✓' : 'Sesión guardada ✓', 'var(--g)');
 }
 
 function renderEstudio() {
@@ -2000,6 +2008,7 @@ function delEstudio(id) {
   customConfirm('¿Eliminar esta sesión de estudio?', () => {
     state.estudios = (state.estudios||[]).filter(e=>e.id!==id);
     save(); renderEstudio();
+    showToast('Sesión eliminada', 'var(--muted)');
   });
 }
 
@@ -2221,6 +2230,7 @@ function saveBolo() {
   }
 
   if (!state.bolos) state.bolos = [];
+  const wasEditingBolo = !!editingBoloId;
   if (editingBoloId) {
     const b = state.bolos.find(x=>x.id===editingBoloId);
     if (b) Object.assign(b, { fecha, hora, lugar, nota, setlistId });
@@ -2229,6 +2239,7 @@ function saveBolo() {
   }
   cancelEditBolo();
   save(); renderCalendario();
+  showToast(wasEditingBolo ? 'Bolo actualizado ✓' : 'Bolo guardado ✓', 'var(--g)');
 }
 
 function startEditBolo(id) {
@@ -2277,6 +2288,7 @@ function delBolo(id) {
     state.bolos = (state.bolos||[]).filter(b=>b.id!==id);
     cancelEditBolo();
     save(); renderCalendario();
+    showToast('Bolo eliminado', 'var(--muted)');
   });
 }
 
@@ -2373,6 +2385,7 @@ function promptNewSetlist() {
       songIds:bandSongs(band.id).map(function(s){return s.id;}),gearPreset:{},createdAt:new Date().toISOString()};
     if(!state.setlists) state.setlists=[];
     state.setlists.push(sl); activeSetlistId=sl.id; save(); render();
+    showToast('Setlist creado ✓', 'var(--g)');
   });
 }
 function promptRenameSetlist() {
@@ -2380,6 +2393,7 @@ function promptRenameSetlist() {
   customPrompt('Nuevo nombre:', sl.nombre, function(n) {
     if(!n||n.trim()===sl.nombre) return;
     sl.nombre=n.trim(); save(); renderSetlistBar();
+    showToast('Setlist renombrado ✓', 'var(--g)');
   });
 }
 function promptSetlistLinks() {
@@ -2388,6 +2402,7 @@ function promptSetlistLinks() {
     customPrompt('Enlace de Moises:', sl.moises||'', function(moises) {
       sl.spotify=spotify.trim(); sl.moises=moises.trim();
       save(); render();
+      showToast('Enlaces guardados ✓', 'var(--g)');
     });
   });
 }
@@ -2396,6 +2411,7 @@ function duplicateSetlist() {
   var copy=JSON.parse(JSON.stringify(sl));
   copy.id=nxtId(); copy.nombre=sl.nombre+' (copia)'; copy.createdAt=new Date().toISOString();
   state.setlists.push(copy); activeSetlistId=copy.id; save(); render();
+  showToast('Setlist duplicado ✓', 'var(--g)');
 }
 function deleteSetlist() {
   var sl=activeSetlist(); if(!sl) return;
@@ -2403,6 +2419,7 @@ function deleteSetlist() {
     state.setlists=state.setlists.filter(function(x){return x.id!==sl.id;});
     var rem=bandSetlists(activeBandId); activeSetlistId=rem.length?rem[0].id:null;
     save(); render();
+    showToast('Setlist eliminado', 'var(--muted)');
   });
 }
 function editGearPreset() {
@@ -2461,6 +2478,7 @@ function saveGearPreset() {
   var sl=activeSetlist(); if(!sl) return;
   sl.gearPreset=collectFromPicker('gpp'); save();
   var p=document.getElementById('gear-preset-panel'); if(p) p.remove();
+  showToast('Preset de gear guardado ✓', 'var(--g)');
 }
 
 // == PROGRESO Y COMPARAR =========================================
@@ -2495,7 +2513,8 @@ function exportSetlistPDF() {
   WPDF.export(band.nombre+(sl?' \u2014 '+sl.nombre:''),[{title:'Setlist',
     headers:['#','T\u00edtulo','Artista','Tono','Dur.','Estado'],
     rows:songs.map(function(s,i){return [String(i+1).padStart(2,'0'),s.titulo,s.artista||'',s.tono||'',s.dur||'',
-      {aprendida:'Aprendida',proceso:'En proceso',pendiente:'Pendiente',candidata:'Posible'}[s.estado]||''];})}]);
+      {aprendida:'Aprendida',proceso:'En proceso',pendiente:'Pendiente',candidata:'Posible'}[s.estado]||''];})}])
+    .catch(function(){showExportFb('No se pudo generar el PDF. \u00bfTienes conexi\u00f3n?','var(--r)');});
 }
 function exportGearPDF() {
   var band=activeBand(); if(!band) return;
@@ -2503,7 +2522,8 @@ function exportGearPDF() {
   var rows=[]; setlistSongs().forEach(function(s){
     resolveGearWithPreset(s.gear).forEach(function(g){rows.push([s.titulo,gearEmoji(g.tipo)+' '+g.nombre,g.modelo||'',g.config||'']);});
   }); if(!rows.length){showExportFb('Sin gear configurado','var(--o)');return;}
-  WPDF.export('Gear \u2014 '+band.nombre,[{title:'Gear',headers:['Canci\u00f3n','Instrumento','Modelo','Config'],rows:rows}]);
+  WPDF.export('Gear \u2014 '+band.nombre,[{title:'Gear',headers:['Canci\u00f3n','Instrumento','Modelo','Config'],rows:rows}])
+    .catch(function(){showExportFb('No se pudo generar el PDF. \u00bfTienes conexi\u00f3n?','var(--r)');});
 }
 
 // == SWIPE MODO DIRECTO ==========================================
@@ -2822,11 +2842,13 @@ function saveBand() {
       state.bands.push(band);
       activeBandId = band.id;
     }
+    const wasEditing = !!editingBandId;
     cancelEditBand();
     document.getElementById('band-add-panel').classList.remove('open');
     const btn = document.getElementById('band-toggle-create-btn');
     if (btn) btn.textContent = '+ Nuevo grupo';
     save(); render();
+    showToast(wasEditing ? 'Grupo actualizado ✓' : 'Grupo creado ✓', 'var(--g)');
   });
 }
 function startEditBand(id) {
@@ -2879,6 +2901,7 @@ function changeBandPhoto(id, inputEl) {
     if (!foto) return;
     const b = state.bands.find(x=>x.id===id); if (!b) return;
     b.foto = foto; save(); render();
+    showToast('Foto actualizada ✓', 'var(--g)');
   });
 }
 
@@ -2894,6 +2917,7 @@ function delBand(id) {
     state.bolos=(state.bolos||[]).filter(g=>g.bandId!==id);
     if (activeBandId===id) activeBandId = state.bands[0]?.id||null;
     save(); render();
+    showToast('Grupo eliminado', 'var(--muted)');
   });
 }
 
@@ -3003,6 +3027,7 @@ function saveMiembro() {
 
   if (esYo) band.miembros.forEach(m=>m.esYo=false);
 
+  const wasEditingMiembro = !!editingMiembroId;
   if (editingMiembroId) {
     const target = band.miembros.find(m=>m.id===editingMiembroId);
     if (target) {
@@ -3014,6 +3039,7 @@ function saveMiembro() {
   }
   resetMiembroForm();
   save(); renderMiembros();
+  showToast(wasEditingMiembro ? 'Integrante actualizado ✓' : 'Integrante añadido ✓', 'var(--g)');
 }
 
 function startEditMiembro(id) {
@@ -3061,9 +3087,12 @@ function delMiembro(id) {
   const band = activeBand(); if (!band || !band.miembros) return;
   const target = band.miembros.find(m=>m.id===id);
   if (target && !canEditMiembro(target)) { showToast('Solo puedes borrar tu propia fila.', 'var(--r)'); return; }
-  band.miembros = band.miembros.filter(m=>m.id!==id);
-  if (editingMiembroId === id) resetMiembroForm();
-  save(); renderMiembros();
+  customConfirm('¿Eliminar este integrante?', () => {
+    band.miembros = band.miembros.filter(m=>m.id!==id);
+    if (editingMiembroId === id) resetMiembroForm();
+    save(); renderMiembros();
+    showToast('Integrante eliminado', 'var(--muted)');
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3146,6 +3175,7 @@ function saveCompartido() {
   const rol = document.getElementById('cp-rol').value;
   if (!band.compartidos) band.compartidos = [];
 
+  const wasEditingCompartido = !!editingCompartidoId;
   if (editingCompartidoId) {
     const c = band.compartidos.find(x=>x.id===editingCompartidoId);
     if (c) {
@@ -3167,6 +3197,7 @@ function saveCompartido() {
   }
   cancelEditCompartido();
   save(); renderCompartidos(); renderMiembros();
+  showToast(wasEditingCompartido ? 'Permiso actualizado ✓' : 'Acceso compartido ✓', 'var(--g)');
 }
 function startEditCompartido(id) {
   if (!canManagePermissions()) return;
@@ -3202,12 +3233,15 @@ function delCompartido(id) {
   if (!canManagePermissions()) { showToast('Solo un admin puede cambiar los permisos.', 'var(--r)'); return; }
   const band = activeBand(); if (!band || !band.compartidos) return;
   const target = band.compartidos.find(c=>c.id===id);
-  band.compartidos = band.compartidos.filter(c=>c.id!==id);
-  if (editingCompartidoId === id) cancelEditCompartido();
-  save(); renderCompartidos(); renderMiembros();
-  const fb = typeof _fb === 'function' ? _fb() : null;
-  const me = fb ? fb.getUser() : null;
-  if (me && target) removeShareInvite(target.email, me.uid, band.id);
+  customConfirm('¿Quitar el acceso de esta persona?', () => {
+    band.compartidos = band.compartidos.filter(c=>c.id!==id);
+    if (editingCompartidoId === id) cancelEditCompartido();
+    save(); renderCompartidos(); renderMiembros();
+    const fb = typeof _fb === 'function' ? _fb() : null;
+    const me = fb ? fb.getUser() : null;
+    if (me && target) removeShareInvite(target.email, me.uid, band.id);
+    showToast('Acceso eliminado', 'var(--muted)');
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3236,8 +3270,6 @@ const OB_STEPS = [
     body:'Registra cada ensayo valorando cada canción. La gráfica muestra cómo evoluciona el repertorio.'
   },
 ];
-
-if(typeof WOnboarding!=='undefined')WOnboarding.show('setlist', OB_STEPS);
 
 applyAppearancePrefs();
 render();
@@ -3374,6 +3406,7 @@ function I_addSetupRecord(id){
   const costo = document.getElementById('setup-costo-'+id).value.trim();
   const notas = document.getElementById('setup-notas-'+id).value.trim();
   if (!item.historialSetup) item.historialSetup = [];
+  const wasEditingSetup = !!editingSetupRecordId;
   if (editingSetupRecordId) {
     const rec = item.historialSetup.find(r=>r.id===editingSetupRecordId);
     if (rec) Object.assign(rec, { fecha, quien, cuerdas, costo, notas });
@@ -3385,6 +3418,7 @@ function I_addSetupRecord(id){
   expandedSetupForm.delete(id);
   expandedSetupHistory.add(id);
   I_save(); I_render();
+  showToast(wasEditingSetup ? 'Ajuste actualizado ✓' : 'Ajuste guardado ✓', 'var(--g)');
 }
 function I_delSetupRecord(itemId, recordId){
   const item = I_state.items.find(x=>x.id===itemId); if (!item) return;
@@ -3393,6 +3427,7 @@ function I_delSetupRecord(itemId, recordId){
     I_recomputeUltimoSetup(item);
     if (editingSetupRecordId === recordId) { editingSetupRecordId = null; expandedSetupForm.delete(itemId); }
     I_save(); I_render();
+    showToast('Ajuste eliminado', 'var(--muted)');
   });
 }
 
@@ -3423,6 +3458,7 @@ function I_addInstrumento(){
     });
     ['if-nombre','if-modelo','if-calibre','if-afinacion','if-setup','if-notas','if-foto'].forEach(id=>document.getElementById(id).value='');
     I_closeAdd(); I_save(); I_render();
+    showToast('Instrumento añadido ✓', 'var(--g)');
   });
 }
 
@@ -3552,12 +3588,14 @@ function I_saveEdit(id, has){
   readImageCompressed(fotoFile, 300, function(foto) {
     if (foto) i.foto = foto;
     I_editId = null; I_save(); I_render();
+    showToast('Instrumento actualizado ✓', 'var(--g)');
   });
 }
 function I_delItem(id){
   customConfirm('¿Eliminar este instrumento?', () => {
     I_state.items = I_state.items.filter(x=>x.id!==id);
     I_editId = null; I_save(); I_render();
+    showToast('Instrumento eliminado', 'var(--muted)');
   });
 }
 
@@ -3626,7 +3664,7 @@ async function doLogin() {
   errEl.style.display = 'none';
   try {
     const fb = _fb();
-    if (!fb) throw new Error('Firebase no disponible');
+    if (!fb || !fb.isReady()) throw new Error('not-ready');
     const user = await fb.login();
     if (!user) throw new Error('Login cancelado');
   } catch(e) {
@@ -3634,6 +3672,8 @@ async function doLogin() {
     btnText.textContent = 'ENTRAR CON GOOGLE';
     errEl.textContent   = (e && e.code === 'auth/popup-closed-by-user')
       ? 'Ventana cerrada. Intentalo de nuevo.'
+      : (e && e.message === 'not-ready')
+      ? 'No se pudo conectar con el servidor de autenticacion. Comprueba tu conexion e intentalo de nuevo.'
       : 'Error al iniciar sesion. Intentalo de nuevo.';
     errEl.style.display = 'block';
   }
@@ -3644,6 +3684,12 @@ function showApp(user) {
   document.getElementById('app-shell').style.display = '';
   updateAuthBtn(user);
   updateAccountCard(user);
+  // El tutorial de bienvenida solo debe verse una vez dentro de la app,
+  // nunca tapando la pantalla de login (WOnboarding ya evita repetirse
+  // via isDone()/localStorage, así que esto es seguro en cada login).
+  if (typeof WOnboarding !== 'undefined' && typeof OB_STEPS !== 'undefined') {
+    WOnboarding.show('setlist', OB_STEPS);
+  }
 }
 
 function showLogin() {
@@ -3835,6 +3881,13 @@ function renderSharedBanner() {
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    // clients.claim() en sw.js dispara 'controllerchange' también la
+    // PRIMERA vez que el SW toma control (no solo en actualizaciones reales).
+    // Sin esta guarda, cualquier visita nueva recargaba la página sola ~1-2s
+    // después de cargar — lo que podía cortar un login con popup en curso.
+    // Solo recargamos si YA había un controller antes de este registro,
+    // es decir, si esto es de verdad una actualización de versión.
+    const hadController = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.register('./sw.js').then(reg => {
       if (reg.waiting && navigator.serviceWorker.controller) showUpdateBar();
       reg.addEventListener('updatefound', () => {
@@ -3849,7 +3902,7 @@ if ('serviceWorker' in navigator) {
     });
     let refreshing = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return;
+      if (!hadController || refreshing) return;
       refreshing = true;
       window.location.reload();
     });

@@ -33,6 +33,10 @@ const WOnboarding = (() => {
   function show(app, steps) {
     if (isDone(app)) return;
     if (!steps || !steps.length) return;
+    // Evita reiniciar el tutorial al paso 1 si show() se llama de nuevo
+    // mientras ya está abierto (p.ej. wapps:auth-change puede reemitirse
+    // más de una vez para el mismo login — ver wapps-firebase.js).
+    if (document.getElementById('wob-overlay')) return;
     _render(app, steps, 0);
   }
 

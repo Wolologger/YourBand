@@ -31,7 +31,10 @@ function today() {
 }
 
 function fmt(n, d = 2) {
-  return Number(n || 0).toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
+  // useGrouping debe ser explícito: en V8, toLocaleString con
+  // min/maxFractionDigits pero SIN useGrouping omite el separador de miles
+  // (1234,50 en vez de 1.234,50), pese a que el default de la spec es true.
+  return Number(n || 0).toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d, useGrouping: true });
 }
 
 function esc(s) {

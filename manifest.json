@@ -8,8 +8,8 @@
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
-  "background_color": "#f8fafc",
-  "theme_color": "#f4623a",
+  "background_color": "#0a0a09",
+  "theme_color": "#0a0a09",
   "lang": "es",
   "dir": "ltr",
   "prefer_related_applications": false,
@@ -20,5 +20,21 @@
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "categories": ["music", "productivity"],
-  "related_applications": []
+  "related_applications": [],
+  "screenshots": [
+    {
+      "src": "icons/screenshots/setlist.png",
+      "sizes": "1082x2202",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Repertorio de un grupo, con estado y tono de cada canción"
+    },
+    {
+      "src": "icons/screenshots/modo-directo.png",
+      "sizes": "1082x2202",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Modo directo para tocar en vivo: tono en grande y aviso de la siguiente canción"
+    }
+  ]
 }
