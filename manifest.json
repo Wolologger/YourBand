@@ -21,6 +21,31 @@
   ],
   "categories": ["music", "productivity"],
   "related_applications": [],
+  "launch_handler": { "client_mode": "focus-existing" },
+  "edge_side_panel": { "preferred_width": 400 },
+  "shortcuts": [
+    {
+      "name": "Registrar ensayo",
+      "short_name": "Ensayos",
+      "description": "Apuntar cómo fue el último ensayo",
+      "url": "/?tab=ensayos",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Calendario",
+      "short_name": "Calendario",
+      "description": "Ver los próximos bolos y ensayos",
+      "url": "/?tab=calendario",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Instrumentos",
+      "short_name": "Instrumentos",
+      "description": "Ver el inventario de gear del grupo",
+      "url": "/?tab=instrumentos",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
   "screenshots": [
     {
       "src": "icons/screenshots/setlist.png",

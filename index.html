@@ -3741,6 +3741,18 @@ function showApp(user) {
   if (typeof WOnboarding !== 'undefined' && typeof OB_STEPS !== 'undefined') {
     WOnboarding.show('setlist', OB_STEPS);
   }
+  applyShortcutTab();
+}
+
+// Accesos directos del manifest.json (mantener menú del icono / long-press) —
+// abren la app en una pestaña concreta vía ?tab=. Solo se aplica una vez, al
+// mostrar la app tras el login, y se limpia de la URL para no repetirse.
+const SHORTCUT_TABS = ['canciones','ensayos','estudio','calendario','integrantes','exportar','instrumentos'];
+function applyShortcutTab() {
+  const tab = new URLSearchParams(location.search).get('tab');
+  if (!tab || !SHORTCUT_TABS.includes(tab)) return;
+  if (tab === 'instrumentos') { openInstrumentos(); } else { activateMainTab(tab); }
+  history.replaceState(null, '', location.pathname);
 }
 
 function showLogin() {
