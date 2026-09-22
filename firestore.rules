@@ -2,17 +2,28 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Cuenta admin — ve la lista de usuarios y todos sus datos (zona Admin
+    // de la app, solo visible en la UI para este correo). Es la única
+    // fuente real de esa restricción: la UI se oculta a todos los demás
+    // por comodidad, pero quien de verdad decide quién puede leer qué es
+    // esta regla. Cambia el correo aquí si hace falta.
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email.lower() == 'lloredasierra@gmail.com';
+    }
+
     // Datos del grupo: users/{uid}/data/{key} (key = "setlist.data", "instrumentos.data", ...)
     // El dueño siempre tiene acceso total. Además, cualquier persona cuyo correo
     // aparezca en sharedViewerEmails puede leer, y cualquiera en sharedEditorEmails
     // puede leer y escribir. Esas listas las mantiene la propia app dentro del documento
     // (ver recomputeSharedEmails() en el código) a partir de lo que el dueño configura
-    // en Ajustes → Compartir grupo.
+    // en Ajustes → Compartir grupo. El admin puede LEER (no escribir) los datos de
+    // cualquiera, para la zona Admin.
     match /users/{uid}/data/{key} {
       allow read: if request.auth != null && (
         request.auth.uid == uid ||
         request.auth.token.email.lower() in resource.data.get('sharedViewerEmails', []) ||
-        request.auth.token.email.lower() in resource.data.get('sharedEditorEmails', [])
+        request.auth.token.email.lower() in resource.data.get('sharedEditorEmails', []) ||
+        isAdmin()
       );
       allow write: if request.auth != null && (
         request.auth.uid == uid ||
@@ -30,6 +41,16 @@ service cloud.firestore {
     match /shareInvites/{emailId} {
       allow read: if request.auth != null && request.auth.token.email.lower() == emailId;
       allow write: if request.auth != null;
+    }
+
+    // Directorio de logins: un documento por usuario (directory/{uid}) que la propia
+    // app escribe en cada login (ver registerDirectoryEntry() en el código), con
+    // email/nombre/foto/primer login/último login. Cada usuario solo puede escribir
+    // SU PROPIA entrada (no puede tocar la de nadie más). El admin puede leerlas todas
+    // para la zona Admin; cada usuario puede leer la suya propia.
+    match /directory/{uid} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow write: if request.auth != null && request.auth.uid == uid;
     }
   }
 }

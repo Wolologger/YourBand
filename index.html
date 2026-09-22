@@ -147,8 +147,8 @@
     <span class="sync-pending" id="sync-pending"></span>
   </div>
   <div style="display:flex;gap:6px;">
-    <button class="sync-btn" id="pull-btn" onclick="manualPull()" disabled>↓ PULL</button>
-    <button class="sync-btn" id="sync-btn" onclick="manualSync()" disabled>↑ SYNC</button>
+    <button class="sync-btn" id="pull-btn" onclick="manualPull()" disabled title="Descargar los cambios de tus otros dispositivos">↓ PULL</button>
+    <button class="sync-btn" id="sync-btn" onclick="manualSync()" disabled title="Subir tus cambios pendientes (no descarga los de otros dispositivos)">↑ SYNC</button>
     <button class="sync-btn" id="push-app-btn" onclick="manualPushApp('setlist.data')" title="Forzar subida de esta app a Firebase">⬆ SUBIR</button>
   </div>
 </div>
@@ -163,6 +163,7 @@
   <button class="nav-icon-btn" onclick="openBandas()" title="Grupos"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20c0-3.5 2.5-6 5.5-6s5.5 2.5 5.5 6"/><circle cx="17" cy="8" r="2.6"/><path d="M15 14.2c2.6.4 4.5 2.6 4.5 5.8"/></svg></button>
   <button class="nav-icon-btn" onclick="openInstrumentos()" title="Instrumentos"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5c-4.5 0-8 4.6-8 9.3 0 4.4 3.3 8.2 5.3 9.5.9.6 1.7.7 2.7.7s1.8-.1 2.7-.7c2-1.3 5.3-5.1 5.3-9.5 0-4.7-3.5-9.3-8-9.3Z"/><circle cx="12" cy="11" r="2.4"/></svg></button>
   <button class="nav-icon-btn" onclick="openAjustes()" title="Ajustes"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="16" cy="6" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="8" cy="12" r="2" fill="currentColor" stroke="none"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="14" cy="18" r="2" fill="currentColor" stroke="none"/></svg></button>
+  <button class="nav-icon-btn" id="admin-nav-btn" onclick="openAdmin()" title="Admin" style="display:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/><path d="m9 12 2 2 4-4"/></svg></button>
   <button class="wnav-version app-version" onclick="openChangelog()" title="Ver novedades" style="background:transparent;cursor:pointer;">v1.7</button>
 </div>
 
@@ -533,6 +534,26 @@
       </div>
 
       <button class="app-version" onclick="openChangelog()" style="display:block;margin:8px auto 0;background:transparent;border:none;font-size:10px;color:var(--muted);font-family:var(--fm);cursor:pointer;text-decoration:underline;text-underline-offset:2px;">YourBand v1.7 · Ver novedades</button>
+    </div>
+
+    <!-- ADMIN — solo visible/accesible para ADMIN_EMAIL (ver showApp() e
+         isAdminUser()). La restricción real está en firestore.rules. -->
+    <div id="admin" class="section">
+      <div class="band-header" style="margin-bottom:16px;">
+        <div class="band-header-name" style="font-size:22px;">🛡 Admin</div>
+      </div>
+      <div class="data-card">
+        <div style="font-family:var(--fh);font-size:16px;margin-bottom:6px;">Usuarios registrados</div>
+        <div style="font-size:11px;color:var(--muted);font-family:var(--fm);margin-bottom:10px;">Quién ha iniciado sesión alguna vez en la app.</div>
+        <div id="admin-users-list"><div class="empty">Cargando…</div></div>
+      </div>
+      <div class="data-card" id="admin-data-card" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div style="font-family:var(--fh);font-size:16px;" id="admin-data-title">Datos</div>
+          <button class="btn btn-sm" onclick="document.getElementById('admin-data-card').style.display='none'">✕ Cerrar</button>
+        </div>
+        <div id="admin-data-body"></div>
+      </div>
     </div>
 
   </div>
@@ -943,6 +964,10 @@ function openAjustes() {
   if (currentTab === 'ajustes') { activateMainTab(lastMainTab); return; }
   showTab('ajustes', document.querySelectorAll('.nav-icon-btn')[2]);
 }
+function openAdmin() {
+  if (currentTab === 'admin') { activateMainTab(lastMainTab); return; }
+  showTab('admin', document.querySelectorAll('.nav-icon-btn')[3]);
+}
 
 function handleFab() { toggleAdd(); }
 
@@ -1174,6 +1199,7 @@ function render() {
   if (currentTab === 'instrumentos') I_render();
   if (currentTab === 'calendario') renderCalendario();
   if (currentTab === 'integrantes') { renderMiembros(); renderCompartidos(); }
+  if (currentTab === 'admin') renderAdmin();
 }
 
 function updateNavTitle() {
@@ -1813,6 +1839,13 @@ function renderEnsayos() {
 
   const ensayos = (state.ensayos||[]).filter(e => e.bandId === (band?.id));
   const el = document.getElementById('ensayos-list');
+
+  if (!band) {
+    if (el) el.innerHTML = '<div class="empty">Selecciona un grupo primero.</div>';
+    const chartEl = document.getElementById('progress-chart-panel');
+    if (chartEl) chartEl.innerHTML = '';
+    return;
+  }
 
   renderProgressChart(ensayos, band.id);
   if(!ensayos.length){el.innerHTML='<div class="empty">Sin ensayos registrados todavía.</div>';return;}
@@ -3735,6 +3768,8 @@ function showApp(user) {
   document.getElementById('app-shell').style.display = '';
   updateAuthBtn(user);
   updateAccountCard(user);
+  const adminBtn = document.getElementById('admin-nav-btn');
+  if (adminBtn) adminBtn.style.display = isAdminUser(user) ? '' : 'none';
   // El tutorial de bienvenida solo debe verse una vez dentro de la app,
   // nunca tapando la pantalla de login (WOnboarding ya evita repetirse
   // via isDone()/localStorage, así que esto es seguro en cada login).
@@ -3822,6 +3857,7 @@ window.addEventListener('wapps:auth-change', async e => {
       updateSyncUI(fb ? (fb.isOnline() ? 'online' : 'offline') : 'offline', sync ? sync.getPending().length : 0);
     }
     checkSharedInvites(user);
+    registerDirectoryEntry(user);
   } else {
     showLogin();
   }
@@ -3835,6 +3871,111 @@ window.addEventListener('wapps:auth-change', async e => {
 function _rawDb() {
   try { return (typeof firebase !== 'undefined' && firebase.firestore) ? firebase.firestore() : null; }
   catch(e) { return null; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ADMIN — zona visible solo para ADMIN_EMAIL. La restricción real está en
+// firestore.rules (isAdmin()); esto solo oculta la UI para todos los demás.
+// ═══════════════════════════════════════════════════════════════
+const ADMIN_EMAIL = 'lloredasierra@gmail.com';
+function isAdminUser(user) { return !!user?.email && user.email.toLowerCase() === ADMIN_EMAIL; }
+
+// Registra/actualiza la entrada de este usuario en el directorio de logins
+// (directory/{uid}) — es lo que alimenta la lista de "quién ha iniciado
+// sesión" en la zona Admin. Se llama en cada login (ver wapps:auth-change).
+async function registerDirectoryEntry(user) {
+  const db = _rawDb(); if (!db || !user) return;
+  try {
+    const ref = db.collection('directory').doc(user.uid);
+    const snap = await ref.get();
+    const existing = snap.exists ? snap.data() : null;
+    const now = new Date().toISOString();
+    await ref.set({
+      email: (user.email || '').toLowerCase(),
+      displayName: user.displayName || '',
+      photoURL: user.photoURL || null,
+      firstLogin: existing?.firstLogin || now,
+      lastLogin: now,
+    });
+  } catch(e) { console.warn('[registerDirectoryEntry]', e); }
+}
+
+let _adminUsersCache = [];
+
+async function renderAdmin() {
+  const list = document.getElementById('admin-users-list');
+  if (!list) return;
+  if (!isAdminUser(_fb()?.getUser())) { list.innerHTML = '<div class="empty">No autorizado.</div>'; return; }
+
+  const db = _rawDb();
+  if (!db) { list.innerHTML = '<div class="empty">Necesitas conexión.</div>'; return; }
+  try {
+    const snap = await db.collection('directory').get();
+    _adminUsersCache = [];
+    snap.forEach(doc => _adminUsersCache.push({ uid: doc.id, ...doc.data() }));
+    _adminUsersCache.sort((a, b) => (b.lastLogin || '').localeCompare(a.lastLogin || ''));
+
+    if (!_adminUsersCache.length) { list.innerHTML = '<div class="empty">Todavía no hay nadie registrado.</div>'; return; }
+
+    list.innerHTML = _adminUsersCache.map(u => `
+      <div class="band-manage-row" data-uid="${esc(u.uid)}">
+        ${u.photoURL
+          ? `<img src="${esc(u.photoURL)}" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;" referrerpolicy="no-referrer">`
+          : `<div class="inst-icon" style="width:32px;height:32px;font-size:14px;">${esc((u.displayName || u.email || '?')[0].toUpperCase())}</div>`}
+        <div class="band-manage-name">
+          ${esc(u.displayName || u.email || u.uid)}
+          <div style="font-size:10px;color:var(--muted);font-family:var(--fm);">${esc(u.email || '')}</div>
+          <div style="font-size:9px;color:var(--dim);font-family:var(--fm);margin-top:2px;">
+            Último login: ${u.lastLogin ? esc(new Date(u.lastLogin).toLocaleString('es-ES')) : '—'}
+            · Primer login: ${u.firstLogin ? esc(new Date(u.firstLogin).toLocaleDateString('es-ES')) : '—'}
+          </div>
+        </div>
+        <button class="btn btn-sm" onclick="viewAdminUserData('${u.uid}')">Ver datos</button>
+      </div>`).join('');
+  } catch(e) {
+    console.warn('[renderAdmin]', e);
+    list.innerHTML = '<div class="empty">Error al cargar usuarios (¿reglas de Firestore actualizadas?).</div>';
+  }
+}
+
+async function viewAdminUserData(uid) {
+  const card  = document.getElementById('admin-data-card');
+  const title = document.getElementById('admin-data-title');
+  const body  = document.getElementById('admin-data-body');
+  if (!card || !title || !body) return;
+
+  const u = _adminUsersCache.find(x => x.uid === uid);
+  title.textContent = 'Datos de ' + (u?.displayName || u?.email || uid);
+  card.style.display = '';
+  body.innerHTML = '<div class="empty">Cargando…</div>';
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const fb = _fb();
+  if (!fb) { body.innerHTML = '<div class="empty">Firebase no disponible.</div>'; return; }
+  try {
+    const data = await fb.pullAll(uid);
+    const keys = Object.keys(data);
+    if (!keys.length) { body.innerHTML = '<div class="empty">Sin datos guardados.</div>'; return; }
+
+    body.innerHTML = keys.map(key => {
+      const d = data[key] || {};
+      let summary = '';
+      if (key === 'setlist_data') {
+        summary = `${(d.bands || []).length} grupo(s) · ${(d.songs || []).length} canción(es) · ${(d.ensayos || []).length} ensayo(s) · ${(d.estudios || []).length} sesión(es) de estudio · ${(d.bolos || []).length} bolo(s)`;
+      } else if (key === 'instrumentos_data') {
+        summary = `${(d.items || []).length} instrumento(s)`;
+      }
+      return `
+        <div style="margin-bottom:14px;">
+          <div style="font-family:var(--fh);font-size:14px;color:var(--y);">${esc(key)}</div>
+          ${summary ? `<div style="font-size:11px;color:var(--muted);font-family:var(--fm);margin-bottom:6px;">${esc(summary)}</div>` : ''}
+          <pre style="background:var(--bg3);border-radius:8px;padding:10px;font-size:10px;overflow-x:auto;max-height:260px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;">${esc(JSON.stringify(d, null, 2))}</pre>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    console.warn('[viewAdminUserData]', e);
+    body.innerHTML = '<div class="empty">Error al cargar los datos de este usuario.</div>';
+  }
 }
 
 async function writeShareInvite(email, ownerUid, ownerName, bandId, bandName, rol) {
